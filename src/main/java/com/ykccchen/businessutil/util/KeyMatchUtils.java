@@ -1,4 +1,4 @@
-package main.java.com.ykccchen.businessutil.util;
+package com.ykccchen.businessutil.util;
 
 
 
