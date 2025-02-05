@@ -2,6 +2,8 @@ package com.ykccchen.businessutil.util;
 
 
 
+import com.ykccchen.businessutil.dto.KeyMatchResult;
+
 import java.util.*;
 import java.util.function.Function;
 
@@ -21,10 +23,38 @@ public class KeyMatchUtils {
      * @param configMap         配置map
      * @return config配置，可能是空的，等于没匹配到
      */
-    public static <T, V> T matchKey(V obj,
+    public static <T, V> KeyMatchResult<T> matchKey(V obj,
                                     List<List<Function<V, String>>> functionMatchList,
                                     Map<String, T> configMap) {
-        return matchKey(obj, functionMatchList, configMap, DEFAULT_SPLIT_STRING);
+        return matchKey(obj, functionMatchList, configMap, DEFAULT_SPLIT_STRING, false);
+    }
+
+    /**
+     * @param obj               对象
+     * @param functionMatchList 匹配函数
+     * @param configMap         配置map
+     * @param fullMatchFlag     完全key匹配，当对象参与匹配的字段不为空时会加入key的生成规则，获取配置时必须完全匹配，不向下低优先级兼容
+     * @return config配置，可能是空的，等于没匹配到
+     */
+    public static <T, V> KeyMatchResult<T> matchKey(V obj,
+                                    List<List<Function<V, String>>> functionMatchList,
+                                    Map<String, T> configMap,
+                                    boolean fullMatchFlag) {
+        return matchKey(obj, functionMatchList, configMap, DEFAULT_SPLIT_STRING, fullMatchFlag);
+    }
+
+    /**
+     * @param obj               对象
+     * @param functionMatchList 匹配函数
+     * @param configMap         配置map
+     * @param split             配置分隔符
+     * @return config配置，可能是空的，等于没匹配到
+     */
+    public static <T, V> KeyMatchResult<T> matchKey(V obj,
+                                                    List<List<Function<V, String>>> functionMatchList,
+                                                    Map<String, T> configMap,
+                                                    String split) {
+        return matchKey(obj, functionMatchList, configMap, split, false);
     }
 
     /**
@@ -32,21 +62,37 @@ public class KeyMatchUtils {
      * @param functionMatchList 匹配函数
      * @param configMap         配置map
      * @param split             字段分隔符，最后一个值的分隔符不需要去掉
+     * @param fullMatchFlag     完全key匹配，当对象参与匹配的字段不为空时会加入key的生成规则，获取配置时必须完全匹配，不向下低优先级兼容
      * @return config配置，可能是空的，等于没匹配到
      */
-    public static <T, V> T matchKey(V obj,
+    public static <T, V>  KeyMatchResult<T> matchKey(V obj,
                                     List<List<Function<V, String>>> functionMatchList,
                                     Map<String, T> configMap,
-                                    String split) {
-
+                                    String split,
+                                    boolean fullMatchFlag) {
+        // 跳过当前优先级
+        boolean skipCurPriority = false;
+        int level = 0;
         for (List<Function<V, String>> functions : functionMatchList) {
+            level++;
             StringBuilder key = new StringBuilder();
             for (Function<V, String> function : functions) {
-                key.append(function.apply(obj)).append(split);
+                String apply = function.apply(obj);
+                // 为空当前优先级可以跳过
+                if (apply == null || "".equals(apply)){
+                    skipCurPriority = true;
+                    break;
+                }
+                key.append(apply).append(split);
+            }
+            // 是否满足跳过条件：优先级获取key是空的
+            if (skipCurPriority){
+                skipCurPriority = false;
+                continue;
             }
             T config = configMap.get(key.toString());
-            if (config != null) {
-                return config;
+            if (config != null || fullMatchFlag) {
+                return new KeyMatchResult<>(key.toString(), level, config);
             }
         }
         return null;
