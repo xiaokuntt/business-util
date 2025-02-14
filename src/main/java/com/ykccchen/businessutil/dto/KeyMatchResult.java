@@ -28,4 +28,13 @@ public class KeyMatchResult<T> {
     public Integer getLevel() {
         return level;
     }
+
+    @Override
+    public String toString() {
+        return "KeyMatchResult{" +
+                "key='" + key + '\'' +
+                ", level=" + level +
+                ", result=" + result +
+                '}';
+    }
 }

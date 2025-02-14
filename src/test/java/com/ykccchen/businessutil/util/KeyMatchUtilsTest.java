@@ -1,5 +1,6 @@
 package com.ykccchen.businessutil.util;
 
+import com.ykccchen.businessutil.dto.KeyMatchResult;
 import com.ykccchen.businessutil.util.KeyMatchUtils;
 import org.junit.Test;
 
@@ -103,9 +104,9 @@ public class KeyMatchUtilsTest {
         // 这里使用有序的哈希MAP， 保证优先级的顺序的对的，这个逻辑必须
         Map<Function<Map<String, String>, String>, Integer> mapByValue = new LinkedHashMap<>();
         // key值为维度的获取方式， value值为价值，值越高价值越大
-        mapByValue.put(map->map.get("p3"), 3);
-        mapByValue.put(map->map.get("p2"), 2);
-        mapByValue.put(map->map.get("p1"), 1);
+        mapByValue.put(map->map.get("p3"), 2);
+        mapByValue.put(map->map.get("p2"), 1);
+        mapByValue.put(map->map.get("p1"), 0);
         //初始化配置优先级组合集
         List<List<Function<Map<String, String>, String>>> priorityList = KeyMatchUtils.initMatchFunctionPriority(mapByValue);
         // 配置初始化    需要按顺序
@@ -116,7 +117,7 @@ public class KeyMatchUtilsTest {
         System.out.println();
         // 匹配
         for (Map<String, String> req : reqList) {
-            Map<String, String> config = KeyMatchUtils.matchKey(req, priorityList, configMap);
+            KeyMatchResult<Map<String, String>> config = KeyMatchUtils.matchKey(req, priorityList, configMap);
            if (config != null){
                System.out.println("需求："+ req.toString() + "， 配置："+config.toString());
            }else {
@@ -146,9 +147,9 @@ public class KeyMatchUtilsTest {
         System.out.println();
         // 匹配
         for (Map<String, String> req : reqList) {
-            Map<String, String> config = KeyMatchUtils.matchKey(req, priorityList, configMap, true);
+            KeyMatchResult<Map<String, String>> config = KeyMatchUtils.matchKey(req, priorityList, configMap, true);
             if (config != null){
-                System.out.println("需求："+ req.toString() + "， 配置："+config.toString());
+                System.out.println("需求："+ req.toString() + "， 配置："+ config.toString());
             }else {
                 System.out.println("需求："+ req.toString() + "未命中配置");
             }

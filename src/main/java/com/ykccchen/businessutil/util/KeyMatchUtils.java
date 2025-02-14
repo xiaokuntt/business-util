@@ -99,7 +99,7 @@ public class KeyMatchUtils {
     }
 
     /**
-     * Map<Function<PlanOrderDTO, String>, Integer> mapByValue = new LinkedHashMap<>();
+     * Map<Function<PlanOrderDTO, String>, Integer> mapByValue = new HashMap<>();
      * mapByValue.put(PlanOrderDTO::getClientId, 4);
      * mapByValue.put(PlanOrderDTO::getScreenSize, 3);
      * mapByValue.put(PlanOrderDTO::getProductModel, 2);
@@ -119,15 +119,14 @@ public class KeyMatchUtils {
 
         for (int size = a.size(); size > 0; size--) {
             List<List<Function<T, String>>> combine = combine(a.size(), size, a);
-
             combine.sort((v1, v2) -> {
                 int i1 = 0;
                 for (Function<T, String> function : v1) {
-                    i1 = i1 * 10 + mapByValue.get(function);
+                    i1 += 1 << mapByValue.get(function);
                 }
                 Integer i2 = 0;
                 for (Function<T, String> function : v2) {
-                    i2 = i2 * 10 + mapByValue.get(function);
+                    i2 += 1 << mapByValue.get(function);
                 }
                 return i2.compareTo(i1);
             });
