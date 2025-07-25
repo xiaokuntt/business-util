@@ -1,8 +1,13 @@
 package com.ykccchen.businessutil.match;
 
+import com.ykccchen.businessutil.match.handler.PriorityMatchType;
+
+import java.util.Collection;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author ykccchen
@@ -10,10 +15,12 @@ import java.util.function.Function;
  * @description
  * @date 2025/7/17 13:44
  */
-public class PriorityMatchFunction<S,C,K> {
+public class PriorityMatchFunction<S, C, K> {
 
     private final String name;
     private final String uniqueId;
+
+    private final PriorityMatchType type;
 
     /**
      * 0 优先级最高, 不能小于0
@@ -28,43 +35,89 @@ public class PriorityMatchFunction<S,C,K> {
      */
     private final Function<C, K> configGetter;
 
-    // 保证每个key实例的唯一性
+    /**
+     * 资源K与配置K是否匹配
+     */
+    private final BiPredicate<K, K> keyMatchFunction;
+
+
     private PriorityMatchFunction(String name,
                                   Integer priority,
+                                  PriorityMatchType type,
                                   Function<S, K> sourceGetter,
-                                  Function<C, K> configGetter) {
-        if (priority < 0){
+                                  Function<C, K> configGetter,
+                                  BiPredicate<K, K> keyMatchFunction) {
+        if (priority < 0) {
             throw new UnsupportedOperationException("Priority must be greater than to 0");
         }
         this.name = name;
+        this.type = type;
         this.uniqueId = UUID.randomUUID().toString();
         this.priority = priority;
         this.sourceGetter = sourceGetter;
         this.configGetter = configGetter;
-    }
-    /**
-     * 创建一个新的数据键。
-     * @param name 键的描述性名称，方便调试
-     */
-    public static <S,C,K> PriorityMatchFunction<S,C,K> of(String name,
-                                                      Integer priority,
-                                                      Function<S, K> sourceGetter,
-                                                      Function<C, K> configGetter) {
-        return new PriorityMatchFunction<>(name, priority, sourceGetter, configGetter);
+        this.keyMatchFunction = keyMatchFunction;
     }
 
-    public static <S,C,K> PriorityMatchFunction<S,C,K> of(Integer priority,
-                                                      Function<S, K> sourceGetter,
-                                                      Function<C, K> configGetter) {
+    /**
+     * 创建一个新的数据键。
+     *
+     * @param name 键的描述性名称，方便调试
+     */
+    public static <S, C, K> PriorityMatchFunction<S, C, K> of(String name,
+                                                              Integer priority,
+                                                              Function<S, K> sourceGetter,
+                                                              Function<C, K> configGetter) {
+        return new PriorityMatchFunction<>(name, priority, PriorityMatchType.COMMON, sourceGetter, configGetter, null);
+    }
+
+    public static <S, C, K> PriorityMatchFunction<S, C, K> of(Integer priority,
+                                                              Function<S, K> sourceGetter,
+                                                              Function<C, K> configGetter) {
         return PriorityMatchFunction.of(null, priority, sourceGetter, configGetter);
     }
 
-    public  K matchSource(S source) {
-        if (source == null ) {
+    public static <S, C, K> PriorityMatchFunction<S, C, K> ofBoolean(String name,
+                                                                     Integer priority,
+                                                                     Function<S, K> sourceGetter,
+                                                                     Function<C, K> configGetter,
+                                                                     BiPredicate<K, K> keyMatchFunction) {
+        return new PriorityMatchFunction<>(name, priority, PriorityMatchType.BOOLEAN, sourceGetter, configGetter, keyMatchFunction);
+    }
+
+    public static <S, C, K> PriorityMatchFunction<S, C, K> ofBoolean(Integer priority,
+                                                                     Function<S, K> sourceGetter,
+                                                                     Function<C, K> configGetter,
+                                                                     BiPredicate<K, K> keyMatchFunction) {
+        return PriorityMatchFunction.ofBoolean(null, priority, sourceGetter, configGetter, keyMatchFunction);
+    }
+
+
+    /**
+     * 匹配对应key
+     * @param source
+     * @param kListSupplier 批量存在的key值，用于模糊匹配的场景，可以为空
+     * @return
+     */
+    public K matchSource(S source, Supplier<Collection<K>> kListSupplier) {
+        if (source == null) {
             return null;
         }
-        return sourceGetter.apply(source);
+        K sourceKey = sourceGetter.apply(source);
+        if (sourceKey == null){
+            return null;
+        }
+        // key匹配模式存在，走key匹配模式
+        if (keyMatchFunction != null){
+            for (K k : kListSupplier.get()) {
+                if (keyMatchFunction.test(sourceKey, k)){
+                    return k;
+                }
+            }
+        }
+        return sourceKey;
     }
+
     public K matchConfig(C config) {
         if (config == null) {
             return null;
@@ -72,7 +125,9 @@ public class PriorityMatchFunction<S,C,K> {
         return configGetter.apply(config);
     }
 
-
+    public PriorityMatchType getType() {
+        return type;
+    }
 
     public String getName() {
         return name;
@@ -104,7 +159,7 @@ public class PriorityMatchFunction<S,C,K> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PriorityMatchFunction<S,C,K> matchFunction = (PriorityMatchFunction<S,C,K>) o;
+        PriorityMatchFunction<S, C, K> matchFunction = (PriorityMatchFunction<S, C, K>) o;
         return uniqueId.equals(matchFunction.uniqueId);
     }
 

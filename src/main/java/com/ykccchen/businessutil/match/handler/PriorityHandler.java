@@ -19,31 +19,32 @@ public interface PriorityHandler {
     /**
      * 基于优先级算法处理方案
      * 转换为处理过后的优先级集合
+     *
      * @param priorityMatchFunctionList 基本字段优先级
      * @return 汇总后的优先级，
      */
-    <S,C,K> List<PriorityMatchProcessor<S,C,K>> initPriorityHandlerList(List<PriorityMatchFunction<S,C,K>> priorityMatchFunctionList);
+    <S, C, K> List<PriorityMatchProcessor<S, C, K>> initPriorityHandlerList(List<PriorityMatchFunction<S, C, K>> priorityMatchFunctionList);
 
-    default <S,C,K> List<List<PriorityMatchFunction<S,C,K>>> combine(int arrSize,
-                                                                           int combineSize,
-                                                                           List<PriorityMatchFunction<S,C,K>> list) {
-        List<List<PriorityMatchFunction<S,C,K>>> res = new ArrayList<>();
+    default <S, C, K> List<List<PriorityMatchFunction<S, C, K>>> combine(int arrSize,
+                                                                         int combineSize,
+                                                                         List<PriorityMatchFunction<S, C, K>> list) {
+        List<List<PriorityMatchFunction<S, C, K>>> res = new ArrayList<>();
         if (combineSize <= 0 || arrSize < combineSize) {
             res.add(list);
             return res;
         }
         // 从 1 开始是题目的设定
-        Deque<PriorityMatchFunction<S,C,K>> path = new ArrayDeque<>();
+        Deque<PriorityMatchFunction<S, C, K>> path = new ArrayDeque<>();
         dfs(arrSize, combineSize, 1, path, res, list);
         return res;
     }
 
-     default  <S,C,K> void dfs(int arrSize,
-                                    int combineSize,
-                                    int begin,
-                                    Deque<PriorityMatchFunction<S,C,K>> path,
-                                    List<List<PriorityMatchFunction<S,C,K>>> res,
-                                    List<PriorityMatchFunction<S,C,K>> list) {
+    default <S, C, K> void dfs(int arrSize,
+                               int combineSize,
+                               int begin,
+                               Deque<PriorityMatchFunction<S, C, K>> path,
+                               List<List<PriorityMatchFunction<S, C, K>>> res,
+                               List<PriorityMatchFunction<S, C, K>> list) {
         // 递归终止条件是：path 的长度等于 k
         if (path.size() == combineSize) {
             res.add(new ArrayList<>(path));
