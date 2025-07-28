@@ -13,6 +13,16 @@ public class PriorityFetcher<S, C, K> {
 
     private final PriorityMatchTree<S, C, K>[] tree;
     private List<PriorityMatchProcessor<S, C, K>> processorList;
+    /**
+     * 优先级集合
+     */
+    private List<PriorityMatchProcessor<S, C, K>> processorTree;
+    /**
+     * 优先级树
+     */
+    private PriorityMatchProcessorTree<S, C, K> priorityMatchProcessorTree;
+
+    private boolean useTreePriority = false;
 
     /**
      * Processor使用记录，uniqueId为标识
@@ -46,11 +56,97 @@ public class PriorityFetcher<S, C, K> {
      * @return 单个优先级配置
      */
     public PriorityMatchResult<List<C>> match(S source) {
-        List<PriorityMatchResult<List<C>>> match = match(source, false);
+        List<PriorityMatchResult<List<C>>> match = match(source,false);
         if (!match.isEmpty()) {
             return match.get(0);
         }
         return null;
+    }
+    /**
+     * 需求匹配配置集，返回单优先级最高的配置集，可能是多个
+     * 使用时要注意配置多的可能性
+     *
+     * @param source 需求信息
+     * @return 单个优先级配置
+     */
+    public List<PriorityMatchResult<List<C>>> match(S source, boolean allPriority) {
+        List<PriorityMatchResult<List<C>>> match;
+        if (useTreePriority) {
+            match = matchTree(source, allPriority);
+        } else {
+            match = matchLevel(source, allPriority);
+        }
+        return match;
+    }
+
+    /**
+     * 需求匹配配置集，返回单优先级最高的配置集，可能是多个
+     * 使用时要注意配置多的可能性
+     *
+     * @param source      需求信息
+     * @param allPriority 是否获取全部优先级
+     * @return 单个优先级配置
+     */
+    private List<PriorityMatchResult<List<C>>> matchTree(S source, boolean allPriority) {
+        List<PriorityMatchResult<List<C>>> matchResultList = new ArrayList<>();
+        LinkedList<PriorityMatchFunction<S, C, K>> recordList = new LinkedList<>();
+        for (PriorityMatchProcessorTree<S, C, K> value : priorityMatchProcessorTree.getPriorityMatchFunctionTree().values()) {
+            PriorityMatchFunction<S, C, K> functionNode = value.getFunctionNode();
+            recordList.add(functionNode);
+            PriorityMatchTree<S, C, K> priorityMatchTree = tree[functionNode.getPriority()];
+            K k = functionNode.matchSource(source, priorityMatchTree::getKeyList);
+            if (k != null) {
+                for (PriorityMatchProcessorTree<S, C, K> childPriorityMatchFunctionTree : value.getPriorityMatchFunctionTree().values()) {
+                    recursion(k, source, childPriorityMatchFunctionTree, priorityMatchTree, matchResultList, recordList, allPriority);
+                    // 部分优先级匹配，有结果可以直接返回
+                    if (!allPriority && !matchResultList.isEmpty()) {
+                        return matchResultList;
+                    }
+                }
+            }
+            recordList.removeLast();
+        }
+        return matchResultList;
+    }
+
+    private void recursion(K k,
+                           S source,
+                           PriorityMatchProcessorTree<S, C, K> priorityMatchFunctionTree,
+                           PriorityMatchTree<S, C, K> parentPriorityMatchTree,
+                           List<PriorityMatchResult<List<C>>> matchResultList,
+                           LinkedList<PriorityMatchFunction<S, C, K>> recordList,
+                           boolean allPriority) {
+        PriorityMatchFunction<S, C, K> functionNode = priorityMatchFunctionTree.getFunctionNode();
+
+        if (priorityMatchFunctionTree.isBottom()) {
+            k = functionNode.matchSource(source, parentPriorityMatchTree::getConfigKeyList);
+            if (k != null) {
+                List<C> configList = parentPriorityMatchTree.getConfigList(k);
+                if (!configList.isEmpty()) {
+                    matchResultList.add(new PriorityMatchResult<>(PriorityMatchProcessor.initUniqueId(recordList),
+                            PriorityMatchProcessor.initName(recordList),
+                            parentPriorityMatchTree.getIndex(),
+                            configList));
+                }
+            }
+        } else {
+            PriorityMatchTree<S, C, K> childTree = parentPriorityMatchTree.getChildTree(k, functionNode);
+            if (childTree == null) {
+                return;
+            }
+            recordList.add(functionNode);
+            k = functionNode.matchSource(source, childTree::getKeyList);
+            if (k != null) {
+                for (PriorityMatchProcessorTree<S, C, K> childPriorityMatchFunctionTree : priorityMatchFunctionTree.getPriorityMatchFunctionTree().values()) {
+                    recursion(k, source, childPriorityMatchFunctionTree, childTree, matchResultList, recordList, allPriority);
+                    // 部分优先级匹配，有结果可以直接返回
+                    if (!allPriority && !matchResultList.isEmpty()) {
+                        break;
+                    }
+                }
+            }
+            recordList.removeLast();
+        }
     }
 
     /**
@@ -60,7 +156,7 @@ public class PriorityFetcher<S, C, K> {
      * @param source 需求信息
      * @return 单个优先级配置
      */
-    public List<PriorityMatchResult<List<C>>> match(S source, boolean allPriority) {
+    private List<PriorityMatchResult<List<C>>> matchLevel(S source, boolean allPriority) {
         List<PriorityMatchResult<List<C>>> allList = new ArrayList<>();
         // 逐层匹配
         match_source_processor:
@@ -68,7 +164,12 @@ public class PriorityFetcher<S, C, K> {
             List<PriorityMatchFunction<S, C, K>> priorityMatchFunctionList = priorityMatchProcessor.getPriorityMatchFunctionList();
             PriorityMatchFunction<S, C, K> functionHead = priorityMatchFunctionList.get(0);
             PriorityMatchTree<S, C, K> priorityMatchTree = tree[functionHead.getPriority()];
-            K k = functionHead.matchSource(source, priorityMatchTree::getKeyList);
+            K k;
+            if (priorityMatchFunctionList.size() == 1) {
+                k = functionHead.matchSource(source, priorityMatchTree::getConfigKeyList);
+            } else {
+                k = functionHead.matchSource(source, priorityMatchTree::getKeyList);
+            }
             // 没匹配上退出当前循环
             if (k == null) {
                 continue;
@@ -81,9 +182,9 @@ public class PriorityFetcher<S, C, K> {
                     continue match_source_processor;
                 }
                 // 最后一层的情况匹配配置
-                if (i ==  priorityMatchFunctionList.size() - 1){
+                if (i == priorityMatchFunctionList.size() - 1) {
                     k = childFunction.matchSource(source, priorityMatchTree::getConfigKeyList);
-                }else {
+                } else {
                     k = childFunction.matchSource(source, priorityMatchTree::getKeyList);
                 }
                 // 没匹配上退出当前循环
@@ -136,11 +237,11 @@ public class PriorityFetcher<S, C, K> {
                 K newK = priorityMatchFunction.matchConfig(config);
                 // 如果为空说明该路由不匹配, 应该匹配其他场景的优先级
                 if (newK == null) {
-                    continue ;
+                    continue;
                 }
                 usePriorityMatchFunctionList.add(priorityMatchFunction);
                 // 初始化头
-                if (functionHead == null){
+                if (functionHead == null) {
                     functionHead = priorityMatchFunction;
                     priorityMatchTree = priorityFetcher.getTree()[functionHead.getPriority()];
                     k = newK;
@@ -152,7 +253,7 @@ public class PriorityFetcher<S, C, K> {
                 k = newK;
             }
             // 3.当前 priorityMatchTree 已经是叶子节点数据, 增加数据
-            if (k != null){
+            if (k != null) {
                 priorityMatchTree.addConfig(k, config);
                 // 记录使用
                 priorityFetcher.useRecordCount(PriorityMatchProcessor.initUniqueId(usePriorityMatchFunctionList));
@@ -170,8 +271,20 @@ public class PriorityFetcher<S, C, K> {
     public PriorityFetcher<S, C, K> pruning() {
         // 剪枝操作
         processorList = processorList.stream()
-                .filter(v->this.useRecordMap.containsKey(v.getUniqueId()))
+                .filter(v -> this.useRecordMap.containsKey(v.getUniqueId()))
                 .collect(Collectors.toList());
+        return this;
+    }
+
+    /**
+     * 转换树处理
+     *
+     * @return 当前对象
+     */
+    public PriorityFetcher<S, C, K> tree() {
+        // 剪枝操作
+        this.useTreePriority = true;
+        this.priorityMatchProcessorTree = PriorityMatchProcessorTree.build(this.processorList);
         return this;
     }
 
@@ -210,10 +323,12 @@ public class PriorityFetcher<S, C, K> {
         public void addConfig(K k, C config) {
             this.configMap.computeIfAbsent(k, k1 -> new ArrayList<>()).add(config);
         }
-        public Collection<K> getKeyList(){
+
+        public Collection<K> getKeyList() {
             return currentTree.keySet();
         }
-        public Collection<K> getConfigKeyList(){
+
+        public Collection<K> getConfigKeyList() {
             return configMap.keySet();
         }
 

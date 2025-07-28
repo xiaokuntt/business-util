@@ -1,5 +1,6 @@
 package com.ykccchen.businessutil.match;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -20,11 +21,7 @@ public class PriorityMatchProcessor<S, C, K> {
 
     public PriorityMatchProcessor(List<PriorityMatchFunction<S, C, K>> priorityMatchFunctionList) {
         this.priorityMatchFunctionList = priorityMatchFunctionList;
-        this.name = priorityMatchFunctionList
-                .stream()
-                .map(PriorityMatchFunction::getName)
-                .filter(Objects::nonNull)
-                .collect(Collectors.joining("_"));
+        this.name = initName(priorityMatchFunctionList);
         this.uniqueId = initUniqueId(priorityMatchFunctionList);
     }
 
@@ -32,6 +29,13 @@ public class PriorityMatchProcessor<S, C, K> {
         return priorityMatchFunctionList
                 .stream()
                 .map(PriorityMatchFunction::getUniqueId)
+                .collect(Collectors.joining("_"));
+    }
+    public static <S, C, K> String initName(List<PriorityMatchFunction<S, C, K>> priorityMatchFunctionList){
+        return priorityMatchFunctionList
+                .stream()
+                .map(PriorityMatchFunction::getName)
+                .filter(Objects::nonNull)
                 .collect(Collectors.joining("_"));
     }
     public int getFunctionSize() {
