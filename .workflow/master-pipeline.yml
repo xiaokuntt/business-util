@@ -43,3 +43,18 @@ stages:
         version: 1.0.0.0
         autoIncrement: true
         strategy: {}
+  - name: stage-3fbabd3f
+    displayName: 上传制品
+    strategy: naturally
+    trigger: auto
+    executor:
+      - xiaokuntt
+    steps:
+      - step: publish@general_artifacts
+        name: publish_general_artifacts
+        displayName: 上传制品
+        dependArtifact: BUILD_ARTIFACT
+        artifactName: business-util
+        notify: []
+        strategy:
+          retry: '0'
