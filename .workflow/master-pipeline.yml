@@ -39,6 +39,7 @@ stages:
       - step: publish@release_artifacts
         name: publish_release_artifacts
         displayName: 发布
-        dependArtifact: output
+        dependArtifact: business-util
         version: 1.0.0.0
         autoIncrement: true
+        strategy: {}
