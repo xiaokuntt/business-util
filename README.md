@@ -19,6 +19,15 @@
 1. 将项目克隆到本地：`git clone https://gitee.com/xiaokuntt/business-util`
 2. 使用Maven构建项目：`mvn clean install`
 
+## MAVEN使用
+```java
+        <dependency>
+            <groupId>cn.ykccchen</groupId>
+            <artifactId>business-util</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+```
+
 ## 使用说明
 1. 创建优先级匹配规则
 ```java
