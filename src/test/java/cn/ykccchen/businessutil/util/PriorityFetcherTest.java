@@ -1,7 +1,8 @@
-package com.ykccchen.businessutil.util;
+package cn.ykccchen.businessutil.util;
 
-import com.ykccchen.businessutil.match.*;
-import com.ykccchen.businessutil.match.handler.PriorityMode;
+import cn.ykccchen.businessutil.match.*;
+import cn.ykccchen.businessutil.match.handler.PriorityMode;
+import org.junit.Assert;
 import org.junit.Test;
 import org.apache.commons.lang3.Range;
 
@@ -445,6 +446,55 @@ public class PriorityFetcherTest {
                 System.out.println("需求：" + req.toString() + "， 配置：" + match.toString() +",配置值:"+match.getResult());
             } else {
                 System.out.println("需求：" + req.toString() + "未命中配置");
+            }
+        }
+    }
+
+    @Test
+    public void testTwoMatchResult() {
+        // 这里使用有序的哈希MAP， 保证优先级的顺序的对的，这个逻辑必须
+        List<Function<Map<String, Serializable>, Serializable>> mapByValue = new ArrayList<>();
+        // key值为维度的获取方式， value值为价值，值越高价值越大
+        mapByValue.add(map -> map.get("p1"));
+        mapByValue.add(map -> map.get("p2"));
+        mapByValue.add(map -> map.get("p3"));
+        mapByValue.add(map -> map.get("p4"));
+        //初始化配置优先级组合集
+        PriorityAssembler<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityAssembler = PriorityAssembler.from(new PriorityAssembler.TypeReference<Map<String, Serializable>>() {
+                }, new PriorityAssembler.TypeReference<Map<String, Serializable>>() {
+                }, new PriorityAssembler.TypeReference<Serializable>() {
+                })
+                .initConfig(configListRange)
+                .initPriorityHandler(PriorityMode.ABSOLUTE_VALUE);
+        //初始化数据获取逻辑
+        for (int i = 0; i < mapByValue.size()-1; i++) {
+            priorityAssembler.addPriorityMatchFunction("配置"+ (i+1), mapByValue.get(i), mapByValue.get(i));
+        }
+        priorityAssembler.addPriorityMatchFunction("配置"+ 4, mapByValue.get(3), mapByValue.get(3), (source, config) -> {
+            if (config instanceof Range && source instanceof Integer) {
+                Range<Integer> range = (Range) config;
+                return range.contains((Integer) source);
+            }
+            return false;
+        });
+
+
+        // 创建对象
+        PriorityFetcher<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityFetcher = priorityAssembler.create();
+        PriorityFetcher<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityFetcherTree = priorityAssembler.create().tree();
+
+        // 配置初始化    需要按顺序
+        for (PriorityMatchProcessor<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityMatchProcessor : priorityFetcher.getProcessorList()) {
+            System.out.println(priorityMatchProcessor);
+        }
+        PriorityMatchProcessorTree<Map<String, Serializable>, Map<String, Serializable>, Serializable> build = PriorityMatchProcessorTree.build(priorityFetcher.getProcessorList());
+        System.out.println();
+        // 匹配
+        for (Map<String, Serializable> req : reqListRange) {
+            PriorityMatchResult<List<Map<String, Serializable>>> match = priorityFetcher.match(req);
+            PriorityMatchResult<List<Map<String, Serializable>>> matchTree = priorityFetcherTree.match(req);
+            if (match != null) {
+                Assert.assertEquals(match.toString(), matchTree.toString());
             }
         }
     }

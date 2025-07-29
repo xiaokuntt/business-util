@@ -1,7 +1,7 @@
-package com.ykccchen.businessutil.match;
+package cn.ykccchen.businessutil.match;
 
-import com.ykccchen.businessutil.match.handler.PriorityHandler;
-import com.ykccchen.businessutil.match.handler.PriorityMode;
+import cn.ykccchen.businessutil.match.handler.PriorityHandler;
+import cn.ykccchen.businessutil.match.handler.PriorityMode;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;

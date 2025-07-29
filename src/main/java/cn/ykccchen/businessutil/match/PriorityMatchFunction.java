@@ -1,6 +1,6 @@
-package com.ykccchen.businessutil.match;
+package cn.ykccchen.businessutil.match;
 
-import com.ykccchen.businessutil.match.handler.PriorityMatchType;
+import cn.ykccchen.businessutil.match.handler.PriorityMatchType;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -95,9 +95,9 @@ public class PriorityMatchFunction<S, C, K> {
 
     /**
      * 匹配对应key
-     * @param source
+     * @param source 资源
      * @param kListSupplier 批量存在的key值，用于模糊匹配的场景，可以为空
-     * @return
+     * @return 匹配K
      */
     public K matchSource(S source, Supplier<Collection<K>> kListSupplier) {
         if (source == null) {

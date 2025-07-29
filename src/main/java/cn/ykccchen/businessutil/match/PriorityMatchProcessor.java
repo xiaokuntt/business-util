@@ -1,9 +1,7 @@
-package com.ykccchen.businessutil.match;
+package cn.ykccchen.businessutil.match;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
