@@ -54,7 +54,6 @@ priorityAssembler.addPriorityMatchFunction("规则名称" , source -> source.get
             return false;
         })
 ```
- :exclamation: 特别注意，在同一个优先级下（[a,b,c]级别），不管是boolean还是string等KEY对象，应该有且只有一个值能匹配上 :exclamation: 
 
 
 
