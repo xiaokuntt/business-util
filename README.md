@@ -54,6 +54,9 @@ priorityAssembler.addPriorityMatchFunction("规则名称" , source -> source.get
             return false;
         })
 ```
+ :exclamation: 特别注意，在同一个优先级下（[a,b,c]级别），不管是boolean还是string等KEY对象，应该有且只有一个值能匹配上 :exclamation: 
+
+
 
 4. 设置优先级处理器模式，可以自定义，内置2种模式，不选择默认 PriorityMode.NUMBER_OF_MATCHES 
 ```java
