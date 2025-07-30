@@ -2,9 +2,7 @@ package cn.ykccchen.businessutil.match;
 
 import cn.ykccchen.businessutil.match.handler.PriorityMatchType;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -99,23 +97,25 @@ public class PriorityMatchFunction<S, C, K> {
      * @param kListSupplier 批量存在的key值，用于模糊匹配的场景，可以为空
      * @return 匹配K
      */
-    public K matchSource(S source, Supplier<Collection<K>> kListSupplier) {
+    public List<K> matchSource(S source, Supplier<Collection<K>> kListSupplier) {
         if (source == null) {
-            return null;
+            return Collections.emptyList();
         }
         K sourceKey = sourceGetter.apply(source);
         if (sourceKey == null){
-            return null;
+            return Collections.emptyList();
         }
         // key匹配模式存在，走key匹配模式
         if (keyMatchFunction != null){
+            List<K> keyList = new ArrayList<>();
             for (K k : kListSupplier.get()) {
                 if (keyMatchFunction.test(sourceKey, k)){
-                    return k;
+                    keyList.add(k);
                 }
             }
+            return keyList;
         }
-        return sourceKey;
+        return Collections.singletonList(sourceKey);
     }
 
     public K matchConfig(C config) {

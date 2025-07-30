@@ -55,6 +55,12 @@ public class PriorityFetcherTest {
         config5.put("value", "p3|p2|p1-value");
         configList.add(config5);
 
+        configList.add(new HashMap(){{
+            this.put("p3", "p3-key");
+            this.put("p2", "p2-key");
+            this.put("value", "p3|p2-value");
+        }});
+
 
     }
 
@@ -359,6 +365,7 @@ public class PriorityFetcherTest {
         mapByValue.add(map -> map.get("p2"));
         mapByValue.add(map -> map.get("p3"));
         mapByValue.add(map -> map.get("p4"));
+
         //初始化配置优先级组合集
         PriorityAssembler<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityAssembler = PriorityAssembler.from(new PriorityAssembler.TypeReference<Map<String, Serializable>>() {
                 }, new PriorityAssembler.TypeReference<Map<String, Serializable>>() {
@@ -398,6 +405,55 @@ public class PriorityFetcherTest {
         }
     }
 
+    @Test
+    public void testMatchRange2() {
+        // 这里使用有序的哈希MAP， 保证优先级的顺序的对的，这个逻辑必须
+        List<Function<Map<String, Serializable>, Serializable>> mapByValue = new ArrayList<>();
+        // key值为维度的获取方式， value值为价值，值越高价值越大
+        mapByValue.add(map -> map.get("p1"));
+        mapByValue.add(map -> map.get("p2"));
+        mapByValue.add(map -> map.get("p4"));
+        mapByValue.add(map -> map.get("p3"));
+
+        //初始化配置优先级组合集
+        PriorityAssembler<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityAssembler = PriorityAssembler.from(new PriorityAssembler.TypeReference<Map<String, Serializable>>() {
+                }, new PriorityAssembler.TypeReference<Map<String, Serializable>>() {
+                }, new PriorityAssembler.TypeReference<Serializable>() {
+                })
+                .initConfig(configListRange)
+                .initPriorityHandler(PriorityMode.ABSOLUTE_VALUE);
+        //初始化数据获取逻辑
+        priorityAssembler.addPriorityMatchFunction("配置"+ (1), mapByValue.get(0), mapByValue.get(0));
+        priorityAssembler.addPriorityMatchFunction("配置"+ (2), mapByValue.get(1), mapByValue.get(1));
+
+        priorityAssembler.addPriorityMatchFunction("配置"+ 3, mapByValue.get(2), mapByValue.get(2), (source, config) -> {
+            if (config instanceof Range && source instanceof Integer) {
+                Range<Integer> range = (Range) config;
+                return range.contains((Integer) source);
+            }
+            return false;
+        });
+        priorityAssembler.addPriorityMatchFunction("配置"+ (4), mapByValue.get(3), mapByValue.get(3));
+
+
+        // 创建对象
+        PriorityFetcher<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityFetcher = priorityAssembler.create();
+
+        // 配置初始化    需要按顺序
+        for (PriorityMatchProcessor<Map<String, Serializable>, Map<String, Serializable>, Serializable> priorityMatchProcessor : priorityFetcher.getProcessorList()) {
+            System.out.println(priorityMatchProcessor);
+        }
+        System.out.println();
+        // 匹配
+        for (Map<String, Serializable> req : reqListRange) {
+            PriorityMatchResult<List<Map<String, Serializable>>> match = priorityFetcher.match(req);
+            if (match != null) {
+                System.out.println("需求：" + req.toString() + "， 配置：" + match.toString() +",配置值:"+match.getResult());
+            } else {
+                System.out.println("需求：" + req.toString() + "未命中配置");
+            }
+        }
+    }
 
 
     @Test
@@ -437,7 +493,6 @@ public class PriorityFetcherTest {
             System.out.println(priorityMatchProcessor);
         }
         PriorityMatchProcessorTree<Map<String, Serializable>, Map<String, Serializable>, Serializable> build = PriorityMatchProcessorTree.build(priorityFetcher.getProcessorList());
-        System.out.println(build);
         System.out.println();
         // 匹配
         for (Map<String, Serializable> req : reqListRange) {

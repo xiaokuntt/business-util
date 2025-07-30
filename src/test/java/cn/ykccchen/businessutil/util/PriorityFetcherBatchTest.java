@@ -100,9 +100,9 @@ public class PriorityFetcherBatchTest {
         PriorityFetcher<Map<String, String>, Map<String, String>, String> priorityFetcher = priorityAssembler.create();
 
          //  配置初始化    需要按顺序
-        for (PriorityMatchProcessor<Map<String, String>, Map<String, String>, String> priorityMatchProcessor : priorityFetcher.getProcessorList()) {
-            System.out.println(priorityMatchProcessor);
-        }
+//        for (PriorityMatchProcessor<Map<String, String>, Map<String, String>, String> priorityMatchProcessor : priorityFetcher.getProcessorList()) {
+//            System.out.println(priorityMatchProcessor);
+//        }
 //        System.out.println(priorityFetcher.getProcessorList());
         System.out.println();
         // 匹配
@@ -190,11 +190,11 @@ public class PriorityFetcherBatchTest {
         PriorityFetcher<Map<String, String>, Map<String, String>, String> priorityFetcher = priorityAssembler.create().tree();
 
         //  配置初始化    需要按顺序
-        for (PriorityMatchProcessor<Map<String, String>, Map<String, String>, String> priorityMatchProcessor : priorityFetcher.getProcessorList()) {
-            System.out.println(priorityMatchProcessor);
-        }
+//        for (PriorityMatchProcessor<Map<String, String>, Map<String, String>, String> priorityMatchProcessor : priorityFetcher.getProcessorList()) {
+//            System.out.println(priorityMatchProcessor);
+//        }
 //        System.out.println(priorityFetcher.getProcessorList());
-        System.out.println();
+//        System.out.println();
         // 匹配
         for (Map<String, String> req : reqList) {
             PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
@@ -279,7 +279,6 @@ public class PriorityFetcherBatchTest {
         PriorityFetcher<Map<String, String>, Map<String, String>, String> priorityFetcher = priorityAssembler.create();
         PriorityFetcher<Map<String, String>, Map<String, String>, String> priorityFetcherTree = priorityAssembler.create().tree();
 
-        System.out.println();
         // 匹配
         for (Map<String, String> req : reqList) {
             PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
