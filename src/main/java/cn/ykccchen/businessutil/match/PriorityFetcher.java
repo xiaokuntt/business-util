@@ -54,10 +54,7 @@ public class PriorityFetcher<S, C, K> {
      */
     public PriorityMatchResult<List<C>> match(S source) {
         List<PriorityMatchResult<List<C>>> match = match(source, false);
-        if (!match.isEmpty()) {
-            return match.get(0);
-        }
-        return null;
+        return match.isEmpty() ? null : match.get(0);
     }
 
     /**
@@ -68,13 +65,7 @@ public class PriorityFetcher<S, C, K> {
      * @return 单个优先级配置
      */
     public List<PriorityMatchResult<List<C>>> match(S source, boolean allPriority) {
-        List<PriorityMatchResult<List<C>>> match;
-        if (useTreePriority) {
-            match = matchTree(source, allPriority);
-        } else {
-            match = matchLevel(source, allPriority);
-        }
-        return match;
+        return useTreePriority ? matchTree(source, allPriority) : matchLevel(source, allPriority);
     }
 
     /**
@@ -95,16 +86,12 @@ public class PriorityFetcher<S, C, K> {
             List<K> kList = functionNode.matchSource(source, priorityMatchTree::getKeyList);
             for (PriorityMatchProcessorTree<S, C, K> childPriorityMatchFunctionTree : value.getPriorityMatchFunctionTree().values()) {
                 if (childPriorityMatchFunctionTree.isBottom()) {
-                    recursion(null, source, childPriorityMatchFunctionTree, priorityMatchTree, matchResultList, recordList, allPriority);
-                    // 部分优先级匹配，有结果可以直接返回
-                    if (!allPriority && !matchResultList.isEmpty()) {
+                    if (recursion(null, source, childPriorityMatchFunctionTree, priorityMatchTree, matchResultList, recordList, allPriority)) {
                         return matchResultList;
                     }
                 }else if (!kList.isEmpty()){
                     for (K k : kList) {
-                        recursion(k, source, childPriorityMatchFunctionTree, priorityMatchTree, matchResultList, recordList, allPriority);
-                        // 部分优先级匹配，有结果可以直接返回
-                        if (!allPriority && !matchResultList.isEmpty()) {
+                        if (recursion(k, source, childPriorityMatchFunctionTree, priorityMatchTree, matchResultList, recordList, allPriority)) {
                             return matchResultList;
                         }
                     }
@@ -115,7 +102,7 @@ public class PriorityFetcher<S, C, K> {
         return matchResultList;
     }
 
-    private void recursion(K k,
+    private boolean recursion(K k,
                            S source,
                            PriorityMatchProcessorTree<S, C, K> priorityMatchFunctionTree,
                            PriorityMatchTree<S, C, K> parentPriorityMatchTree,
@@ -134,36 +121,34 @@ public class PriorityFetcher<S, C, K> {
                             parentPriorityMatchTree.getIndex(),
                             configList));
                     if (!allPriority) {
-                        return;
+                        return true;
                     }
                 }
             }
         } else {
             PriorityMatchTree<S, C, K> childTree = parentPriorityMatchTree.getChildTree(k, functionNode);
             if (childTree == null) {
-                return;
+                return false;
             }
             recordList.add(functionNode);
             List<K> kList = functionNode.matchSource(source, childTree::getKeyList);
             for (PriorityMatchProcessorTree<S, C, K> childPriorityMatchFunctionTree : priorityMatchFunctionTree.getPriorityMatchFunctionTree().values()) {
                 if (childPriorityMatchFunctionTree.isBottom()) {
-                    recursion(null, source, childPriorityMatchFunctionTree, childTree, matchResultList, recordList, allPriority);
-                    // 部分优先级匹配，有结果可以直接返回
-                    if (!allPriority && !matchResultList.isEmpty()) {
-                        return ;
+                    if (recursion(null, source, childPriorityMatchFunctionTree, childTree, matchResultList, recordList, allPriority)) {
+                        return true;
                     }
+
                 }else if (!kList.isEmpty()){
                     for (K newK : kList) {
-                        recursion(newK, source, childPriorityMatchFunctionTree, childTree, matchResultList, recordList, allPriority);
-                        // 部分优先级匹配，有结果可以直接返回
-                        if (!allPriority && !matchResultList.isEmpty()) {
-                            return ;
+                        if (recursion(newK, source, childPriorityMatchFunctionTree, childTree, matchResultList, recordList, allPriority)) {
+                            return true;
                         }
                     }
                 }
             }
             recordList.removeLast();
         }
+        return false;
     }
 
     /**
@@ -193,7 +178,9 @@ public class PriorityFetcher<S, C, K> {
             // 判断是否有多层
             if (priorityMatchFunctionList.size() > 1) {
                 for (K k : kList) {
-                    recursionLevel(k, source, priorityMatchProcessor, 1, priorityMatchTree, allList, allPriority);
+                    if (recursionLevel(k, source, priorityMatchProcessor, 1, priorityMatchTree, allList, allPriority)) {
+                        return allList;
+                    }
                 }
             }else {
                 for (K k : kList) {
@@ -215,7 +202,7 @@ public class PriorityFetcher<S, C, K> {
         }
         return allList;
     }
-    private void recursionLevel(K k,
+    private boolean recursionLevel(K k,
                            S source,
                            PriorityMatchProcessor<S, C, K> priorityMatchProcessor,
                            int index,
@@ -225,7 +212,7 @@ public class PriorityFetcher<S, C, K> {
         PriorityMatchFunction<S, C, K> functionNode = priorityMatchProcessor.getPriorityMatchFunctionList().get(index);
         PriorityMatchTree<S, C, K> childTree = parentPriorityMatchTree.getChildTree(k, functionNode);
         if (childTree == null) {
-            return;
+            return false;
         }
         if (priorityMatchProcessor.getFunctionSize() == index + 1) {
             List<K> kList = functionNode.matchSource(source, childTree::getConfigKeyList);
@@ -238,7 +225,7 @@ public class PriorityFetcher<S, C, K> {
                                 childTree.getIndex(),
                                 configList));
                         if (!allPriority) {
-                            return;
+                            return true;
                         }
                     }
                 }
@@ -249,14 +236,14 @@ public class PriorityFetcher<S, C, K> {
             List<K> kList = functionNode.matchSource(source, childTree::getKeyList);
             if (!kList.isEmpty()) {
                 for (K newK : kList) {
-                    recursionLevel(newK, source, priorityMatchProcessor, index + 1, childTree, matchResultList, allPriority);
-                    // 不需要全部配置的情况
-                    if (!allPriority && !matchResultList.isEmpty()) {
-                        return;
+                    if (recursionLevel(newK, source, priorityMatchProcessor, index + 1, childTree, matchResultList, allPriority)) {
+                        return true;
                     }
+
                 }
             }
         }
+        return false;
     }
 
     public void useRecordCount(String id) {

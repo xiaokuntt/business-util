@@ -1,8 +1,7 @@
-package cn.ykccchen.businessutil.util;
+package cn.ykccchen.businessutil.util.match;
 
 import cn.ykccchen.businessutil.match.PriorityAssembler;
 import cn.ykccchen.businessutil.match.PriorityFetcher;
-import cn.ykccchen.businessutil.match.PriorityMatchProcessor;
 import cn.ykccchen.businessutil.match.PriorityMatchResult;
 import cn.ykccchen.businessutil.match.handler.PriorityMode;
 import org.junit.Assert;
