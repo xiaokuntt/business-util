@@ -4,8 +4,8 @@ import cn.ykccchen.businessutil.match.PriorityAssembler;
 import cn.ykccchen.businessutil.match.PriorityFetcher;
 import cn.ykccchen.businessutil.match.PriorityMatchResult;
 import cn.ykccchen.businessutil.match.handler.PriorityMode;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author ykccchen
@@ -103,16 +105,16 @@ public class PriorityFetcherBatchTest {
 //            System.out.println(priorityMatchProcessor);
 //        }
 //        System.out.println(priorityFetcher.getProcessorList());
-        System.out.println();
+//        System.out.println();
         // 匹配
-        for (Map<String, String> req : reqList) {
-            PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
-            if (match != null) {
-                System.out.println("需求：" + req.toString() + "， 配置：" + match.toString());
-            } else {
-                System.out.println("需求：" + req.toString() + "未命中配置");
-            }
-        }
+//        for (Map<String, String> req : reqList) {
+//            PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
+//            if (match != null) {
+//                System.out.println("需求：" + req.toString() + "， 配置：" + match.toString());
+//            } else {
+//                System.out.println("需求：" + req.toString() + "未命中配置");
+//            }
+//        }
     }
 
 
@@ -195,14 +197,14 @@ public class PriorityFetcherBatchTest {
 //        System.out.println(priorityFetcher.getProcessorList());
 //        System.out.println();
         // 匹配
-        for (Map<String, String> req : reqList) {
-            PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
-            if (match != null) {
-                System.out.println("需求：" + req.toString() + "， 配置：" + match.toString());
-            } else {
-                System.out.println("需求：" + req.toString() + "未命中配置");
-            }
-        }
+//        for (Map<String, String> req : reqList) {
+//            PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
+//            if (match != null) {
+//                System.out.println("需求：" + req.toString() + "， 配置：" + match.toString());
+//            } else {
+//                System.out.println("需求：" + req.toString() + "未命中配置");
+//            }
+//        }
     }
 
     @Test
@@ -283,7 +285,7 @@ public class PriorityFetcherBatchTest {
             PriorityMatchResult<List<Map<String, String>>> match = priorityFetcher.match(req);
             PriorityMatchResult<List<Map<String, String>>> matchTree = priorityFetcherTree.match(req);
             if (match != null) {
-                Assert.assertEquals(match.toString(), matchTree.toString());
+                assertEquals(match.toString(), matchTree.toString());
             }
         }
     }

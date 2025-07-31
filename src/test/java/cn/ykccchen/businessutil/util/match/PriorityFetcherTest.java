@@ -129,6 +129,7 @@ class PriorityFetcherTest {
             assertEquals("US-Premium-Electronics-Phone", resultTree.getResult().get(0).getValue());
 
             assertEquals(result.toString(), resultTree.toString());
+            System.out.println(1);
         }
 
         @Test
