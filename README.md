@@ -19,12 +19,12 @@
 1. 将项目克隆到本地：`git clone https://gitee.com/xiaokuntt/business-util`
 2. 使用Maven构建项目：`mvn clean install`
 
-## MAVEN使用
+## Maven使用(2025年07月31日 最新版)
 ```java
 <dependency>
     <groupId>cn.ykccchen</groupId>
     <artifactId>business-util</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.1</version>
 </dependency>
         
 ```
