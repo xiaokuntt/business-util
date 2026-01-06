@@ -273,8 +273,8 @@ public class PriorityFetcher<S, C, K> {
             List<PriorityMatchFunction<S, C, K>> usePriorityMatchFunctionList = new ArrayList<>(prirotyList.size());
             for (PriorityMatchFunction<S, C, K> priorityMatchFunction : prirotyList) {
                 K newK = priorityMatchFunction.matchConfig(config);
-                // 如果为空说明该路由不匹配, 应该匹配其他场景的优先级
-                if (newK == null) {
+                // 如果为空说明该路由不匹配, 或者是空字符, 应该匹配其他场景的优先级
+                if (newK == null || Objects.equals("", newK)) {
                     continue;
                 }
                 usePriorityMatchFunctionList.add(priorityMatchFunction);

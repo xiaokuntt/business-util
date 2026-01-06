@@ -102,7 +102,7 @@ public class PriorityMatchFunction<S, C, K> {
             return Collections.emptyList();
         }
         K sourceKey = sourceGetter.apply(source);
-        if (sourceKey == null){
+        if (sourceKey == null || Objects.equals("", sourceKey)){
             return Collections.emptyList();
         }
         // key匹配模式存在，走key匹配模式
