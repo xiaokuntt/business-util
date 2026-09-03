@@ -10,20 +10,25 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
+ * 优先级处理器，用作加载全部处理逻辑。
+ *
  * @author ykccchen
  * @version 1.0
- * @description 优先级处理器，用作加载全部处理逻辑
- * @date 2025/7/17 13:59
+ * @since 1.0
  */
 public class PriorityAssembler<S, C, K> {
 
     private final List<PriorityMatchFunction<S, C, K>> priorityList;
     private List<C> configList;
     private PriorityHandler priorityHandler;
+    private DuplicateKeyCheckLevel duplicateKeyCheckLevel;
+    private PriorityNameAndValueHandler<S, C, K> priorityNameAndValueHandler;
 
     private PriorityAssembler(PriorityHandler priorityHandler) {
         this.priorityList = new ArrayList<>();
         this.priorityHandler = priorityHandler;
+        this.duplicateKeyCheckLevel = DuplicateKeyCheckLevel.OFF;
+        this.priorityNameAndValueHandler = new DefaultPriorityNameAndValueHandler<>();
     }
 
     public static <S, C, K> PriorityAssembler<S, C, K> from(Class<S> s,
@@ -39,16 +44,59 @@ public class PriorityAssembler<S, C, K> {
     }
 
     public PriorityAssembler<S, C, K> initConfig(List<C> configList) {
-        this.configList = configList;
+        if (configList == null) {
+            throw new IllegalArgumentException("PriorityAssembler config list cannot be null");
+        }
+        this.configList = new ArrayList<>(configList);
         return this;
     }
 
     public PriorityAssembler<S, C, K> initPriorityHandler(PriorityHandler priorityHandler) {
+        if (priorityHandler == null) {
+            throw new IllegalArgumentException("Priority handler cannot be null");
+        }
         this.priorityHandler = priorityHandler;
         return this;
     }
 
+    /**
+     * Configures duplicate complete-key validation for {@link #create()}.
+     *
+     * @param level OFF, WARNING, or EXCEPTION
+     * @return this assembler
+     */
+    public PriorityAssembler<S, C, K> initDuplicateKeyCheck(DuplicateKeyCheckLevel level) {
+        if (level == null) {
+            throw new IllegalArgumentException("Duplicate key check level cannot be null");
+        }
+        this.duplicateKeyCheckLevel = level;
+        return this;
+    }
+
+    /**
+     * Configures how matched dimensions are rendered in result NAME:VALUE metadata.
+     *
+     * @param handler caller implementation used for each matched dimension
+     * @return this assembler
+     */
+    public PriorityAssembler<S, C, K> initPriorityNameAndValueHandler(
+            PriorityNameAndValueHandler<S, C, K> handler) {
+        if (handler == null) {
+            throw new IllegalArgumentException("Priority name and value handler cannot be null");
+        }
+        this.priorityNameAndValueHandler = handler;
+        return this;
+    }
+
     public PriorityAssembler<S, C, K> add(PriorityMatchFunction<S, C, K> matchFunction) {
+        if (matchFunction == null) {
+            throw new IllegalArgumentException("Priority match function cannot be null");
+        }
+        int expectedPriority = priorityList.size();
+        if (!Objects.equals(expectedPriority, matchFunction.getPriority())) {
+            throw new IllegalArgumentException("Priority must equal its zero-based registration index: expected "
+                    + expectedPriority + " but was " + matchFunction.getPriority());
+        }
         this.priorityList.add(matchFunction);
         return this;
     }
@@ -69,11 +117,8 @@ public class PriorityAssembler<S, C, K> {
                                                                Function<S, K> sourceGetter,
                                                                Function<C, K> configGetter,
                                                                BiPredicate<K, K> keyMatchFunction) {
-        if (keyMatchFunction != null) {
-            this.priorityList.add(PriorityMatchFunction.ofBoolean(name, priorityList.size(), sourceGetter, configGetter, keyMatchFunction));
-        } else {
-            addPriorityMatchFunction(name, sourceGetter, configGetter);
-        }
+        this.priorityList.add(PriorityMatchFunction.ofBoolean(name, priorityList.size(),
+                sourceGetter, configGetter, keyMatchFunction));
         return this;
     }
 
@@ -83,14 +128,43 @@ public class PriorityAssembler<S, C, K> {
         return addPriorityMatchFunction(null, sourceGetter, configGetter, keyMatchFunction);
     }
 
+    /**
+     * Adds a rule whose source and configured values may have different types.
+     *
+     * <p>The distinct method name intentionally avoids ambiguity with the legacy
+     * {@link BiPredicate} overload when callers use a lambda.</p>
+     *
+     * @param name dimension name
+     * @param sourceGetter source-value extractor
+     * @param configGetter configured-value extractor
+     * @param matcher typed matcher, receiving source then configured value
+     * @param <SV> source-value type
+     * @param <CV> configured-value type
+     * @return this assembler
+     */
+    public <SV extends K, CV extends K> PriorityAssembler<S, C, K> addPriorityMatcher(
+            String name,
+            Function<S, SV> sourceGetter,
+            Function<C, CV> configGetter,
+            PriorityMatcher<SV, CV> matcher) {
+        priorityList.add(PriorityMatchFunction.<S, C, K, SV, CV>ofMatcher(
+                name, priorityList.size(), sourceGetter, configGetter, matcher));
+        return this;
+    }
+
+    public <SV extends K, CV extends K> PriorityAssembler<S, C, K> addPriorityMatcher(
+            Function<S, SV> sourceGetter,
+            Function<C, CV> configGetter,
+            PriorityMatcher<SV, CV> matcher) {
+        return addPriorityMatcher(null, sourceGetter, configGetter, matcher);
+    }
+
     public PriorityFetcher<S, C, K> create() {
         if (configList == null) {
-            throw new NullPointerException("PriorityAssembler Config list cannot be null!");
+            throw new IllegalStateException("PriorityAssembler config list must be initialized before create()");
         }
-        List<PriorityMatchProcessor<S, C, K>> processorList = priorityHandler.initPriorityHandlerList(priorityList);
-        return PriorityFetcher
-                .from(processorList, configList, priorityList)
-                .pruning();
+        return PriorityFetcher.from(priorityHandler, configList, priorityList, duplicateKeyCheckLevel,
+                priorityNameAndValueHandler);
     }
 
     public abstract static class TypeReference<T> {

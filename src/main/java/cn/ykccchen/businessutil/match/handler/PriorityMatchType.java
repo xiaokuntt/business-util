@@ -1,10 +1,11 @@
 package cn.ykccchen.businessutil.match.handler;
 
 /**
+ * 配置键的匹配类型。
+ *
  * @author ykccchen
  * @version 1.0
- * @description 配置优先级枚举类
- * @date 2025/5/29 13:38
+ * @since 1.0
  */
 public enum PriorityMatchType {
 

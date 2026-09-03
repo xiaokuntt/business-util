@@ -6,13 +6,18 @@ import cn.ykccchen.businessutil.match.PriorityMatchProcessor;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
+ * 定义处理器组合的优先级排序策略。
+ *
  * @author ykccchen
  * @version 1.0
- * @description 优先级处理
- * @date 2025/5/29 13:50
+ * @since 1.0
  */
 public interface PriorityHandler {
 
@@ -21,9 +26,49 @@ public interface PriorityHandler {
      * 转换为处理过后的优先级集合
      *
      * @param priorityMatchFunctionList 基本字段优先级
+     * @param <S> 需求类型
+     * @param <C> 配置类型
+     * @param <K> 匹配键类型
      * @return 汇总后的优先级，
      */
     <S, C, K> List<PriorityMatchProcessor<S, C, K>> initPriorityHandlerList(List<PriorityMatchFunction<S, C, K>> priorityMatchFunctionList);
+
+    /**
+     * Orders only processor shapes that are present in the loaded configuration.
+     *
+     * <p>The default implementation preserves compatibility with custom handlers by
+     * delegating to the original full-list method and filtering its result. Built-in
+     * handlers override this method so they never materialize the complete power set.</p>
+     *
+     * @param priorityMatchFunctionList all registered functions
+     * @param activeFunctionLists       distinct, non-empty function shapes in configuration
+     * @param <S> source type
+     * @param <C> configuration type
+     * @param <K> key type
+     * @return active processors in matching priority order
+     */
+    default <S, C, K> List<PriorityMatchProcessor<S, C, K>> initPriorityHandlerList(
+            List<PriorityMatchFunction<S, C, K>> priorityMatchFunctionList,
+            Collection<List<PriorityMatchFunction<S, C, K>>> activeFunctionLists) {
+        if (activeFunctionLists.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Set<String> activeIds = activeFunctionLists.stream()
+                .map(PriorityMatchProcessor::initUniqueId)
+                .collect(Collectors.toCollection(HashSet::new));
+        List<PriorityMatchProcessor<S, C, K>> processors = initPriorityHandlerList(priorityMatchFunctionList);
+        if (processors == null) {
+            throw new IllegalArgumentException("Priority handler returned a null processor list");
+        }
+        return processors.stream()
+                .filter(processor -> {
+                    if (processor == null) {
+                        throw new IllegalArgumentException("Priority handler returned a null processor");
+                    }
+                    return activeIds.contains(processor.getUniqueId());
+                })
+                .collect(Collectors.toList());
+    }
 
     default <S, C, K> List<List<PriorityMatchFunction<S, C, K>>> combine(int arrSize,
                                                                          int combineSize,

@@ -3,10 +3,11 @@ package cn.ykccchen.businessutil.match;
 import java.util.*;
 
 /**
+ * 优先级处理器的前缀树。
+ *
  * @author ykccchen
  * @version 1.0
- * @description 优先级处理程序，处理优先级匹配函数列表，表示这是一个水平配置上的全部处理流程
- * @date 2025/7/20 21:43
+ * @since 1.0
  */
 public class PriorityMatchProcessorTree<S, C, K> {
 

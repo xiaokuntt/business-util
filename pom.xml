@@ -6,7 +6,7 @@
 
     <groupId>cn.ykccchen</groupId>
     <artifactId>business-util</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
     <name>Business Utilities Library</name>
     <description>A collection of utilities for business applications</description>
     <url>https://gitee.com/xiaokuntt/business-util</url>
@@ -57,24 +57,21 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M5</version>
                 <configuration>
-                    <!-- 可以指定包含的测试类模式 -->
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
                 </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>5.7.0</version>
-                    </dependency>
-                </dependencies>
             </plugin>
             <!-- 源码插件 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>3.2.1</version>
+                <configuration>
+                    <includes>
+                        <include>**/*.java</include>
+                    </includes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -98,17 +95,6 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <!-- 忽略 JavaDoc 错误 -->
-                    <failOnError>false</failOnError>
-                    <!-- 忽略无效标签 -->
-                    <tags>
-                        <tag>
-                            <name>description</name>
-                            <placement>a</placement>
-                        </tag>
-                    </tags>
-                </configuration>
             </plugin>
             <!-- GPG签名插件 -->
             <plugin>
@@ -141,18 +127,6 @@
                 </configuration>
             </plugin>
         </plugins>
-        <resources>
-            <resource>
-                <directory>src/main/java</directory>
-                <excludes>
-                    <exclude>**/*.java</exclude>
-                    <!-- **是所有文件的意思，如果文件来自其他地方可以仿照这个配置 -->
-                </excludes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-        </resources>
     </build>
 
     <properties>
@@ -185,7 +159,7 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:https:://gitee.com/xiaokuntt/business-util.git</connection>
+        <connection>scm:git:https://gitee.com/xiaokuntt/business-util.git</connection>
         <developerConnection>scm:git:git@gitee.com:xiaokuntt/business-util.git</developerConnection>
         <url>https://gitee.com/xiaokuntt/business-util</url>
         <tag>HEAD</tag>
